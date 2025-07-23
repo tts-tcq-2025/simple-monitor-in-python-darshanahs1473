@@ -1,26 +1,54 @@
-def is_in_range(name, value, min_val, max_val):
-    if value < min_val:
-        print(f"{name} is LOW!")
-        return False
-    if value > max_val:
-        print(f"{name} is HIGH!")
-        return False
-    return True
+from typing import Callable, List
+
+class Vital:
+    def __init__(self, name, value, min_val, max_val):
+        self.name = name
+        self.value = value
+        self.min_val = min_val
+        self.max_val = max_val
+
+    def is_within_range(self):
+        return self.min_val <= self.value <= self.max_val
+
+    def breach_type(self):
+        if self.value < self.min_val:
+            return 'LOW'
+        elif self.value > self.max_val:
+            return 'HIGH'
+        return 'NORMAL'
 
 
-def battery_is_ok(temperature, soc, charge_rate, reporter=print):
+class Reporter:
+    def report(self, vital: Vital):
+        breach = vital.breach_type()
+        if breach != 'NORMAL':
+            print(f'{vital.name} is {breach}!')
+
+
+def battery_is_ok(vitals: List[Vital], reporter: Callable[[Vital], None]) -> bool:
     status = True
-
-    if not is_in_range("Temperature", temperature, 0, 45):
-        status = False
-    if not is_in_range("State of Charge", soc, 20, 80):
-        status = False
-    if not is_in_range("Charge Rate", charge_rate, 0, 0.8):
-        status = False
-
+    for vital in vitals:
+        if not vital.is_within_range():
+            reporter(vital)
+            status = False
     return status
 
 
+def default_reporter(vital: Vital):
+    print(f"{vital.name} is {vital.breach_type()}!")
+
+
 if __name__ == '__main__':
-  assert(battery_is_ok(25, 70, 0.7) is True)
-  assert(battery_is_ok(50, 85, 0) is False)
+    vitals = [
+        Vital("Temperature", 25, 0, 45),
+        Vital("State of Charge", 70, 20, 80),
+        Vital("Charge Rate", 0.7, 0, 0.8)
+    ]
+    assert(battery_is_ok(vitals, default_reporter) is True)
+
+    vitals = [
+        Vital("Temperature", 50, 0, 45),
+        Vital("State of Charge", 85, 20, 80),
+        Vital("Charge Rate", 0.0, 0, 0.8)
+    ]
+    assert(battery_is_ok(vitals, default_reporter) is False)
